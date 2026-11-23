@@ -1,0 +1,58 @@
+Steps 5-6: 30 trials x 200,000 h, failure rate 0.001/h per module, permanent-fault repair 24 h
+================================================================================================================
+config                   failures  MTBF up/fail  MTBF tot/fail  analytic MTBF  avail emp avail anal trials 0 fail
+simplex, transient           5950         1,007          1,008          1,000   0.999008   0.999001             0
+TMR, transient                 10       599,999        600,000        334,222   0.999998   0.999997            22
+                        TMR analytic P(>=2 of 3 down in an hour) = 2.992e-06; per-trial MTBF range 99,999 - 199,999 h
+simplex, permanent           5803         1,010          1,034          1,000   0.976774   0.976562             0
+TMR, permanent                738         8,118          8,130          7,444   0.998521   0.998378             0
+                        TMR analytic P(>=2 of 3 down in an hour) = 1.622e-03; per-trial MTBF range 5,869 - 11,755 h
+  MTBF up/fail = uptime / failures (compare with 1/lambda); tot/fail = total hours / failures (includes repair time)
+  95 % CI on TMR transient MTBF from 10 failures: 326,257 - 1,251,200 h
+  95 % CI on TMR permanent MTBF from 738 failures: 7,553 - 8,737 h
+  Convergence, TMR transient (fast equivalent generator, same model):
+       30 trials:   25 failures, MTBF   239,999 h (95 % CI 162,579 - 370,857); analytic 334,222 h
+      100 trials:   65 failures, MTBF   307,691 h (95 % CI 241,406 - 398,678); analytic 334,222 h
+      300 trials:  193 failures, MTBF   310,880 h (95 % CI 269,985 - 359,861); analytic 334,222 h
+     1000 trials:  601 failures, MTBF   332,778 h (95 % CI 307,205 - 361,072); analytic 334,222 h
+  TMR permanent, 100 further trials (hour steps, new seeds): 2604 failures, MTBF 7,668 h (95 % CI 7,379 - 7,971); analytic 7,444 h
+================================================================================================================
+Steps 7-9: watchdog on a 1-min periodic task; MTBF fixed at the empirical simplex value 1,010 h; restart 2 min; 2000 hangs per setting
+recovery                       mean MTTR (min)  availability  analytic A  downtime/year
+no watchdog (operator restart)          242.36      0.996016    0.995983        2095 min
+watchdog timeout 1 min                    2.50      0.999959    0.999950          22 min
+watchdog timeout 5 min                    6.51      0.999893    0.999883          56 min
+watchdog timeout 10 min                  11.50      0.999810    0.999800         100 min
+watchdog timeout 20 min                  21.51      0.999645    0.999633         187 min
+  analytic A uses MTBF = 1/lambda and the target MTTR (timeout + restart). Expected detection delay is
+  timeout - 0.5 min because the hang occurs on average half a period after the last heartbeat.
+================================================================================================================
+Lab task 1: non-identical TMR modules (permanent faults); simplex reference uses the mean rate
+module rates (per h)           TMR fails  TMR MTBF emp  TMR MTBF anal  simplex MTBF    gain
+[0.001, 0.001, 0.001]                738         8,118          7,444         1,000     8.1x
+[0.0005, 0.001, 0.0015]              725         8,263          8,121         1,000     8.3x
+[0.0002, 0.0008, 0.002]              591        10,140         10,340         1,000    10.1x
+[0.001, 0.001, 0.01]                4512         1,317          1,278           250     5.3x
+================================================================================================================
+Lab task 2: voter overhead (permanent faults). Each hour the computation uses 90 % of its slot; the voter adds
+an overhead. If computation + voter exceeds the slot the deadline is missed, which counts as a system failure.
+  no voter cost                      failures     738  MTBF      8,118 h  availability 0.998521  (better than simplex 1,010 h)
+  bounded: fixed 5 % per hour        failures     738  MTBF      8,118 h  availability 0.998521  (better than simplex 1,010 h)
+  unbounded: exponential, mean 2 %   failures   40870  MTBF        146 h  availability 0.991784  (WORSE than simplex 1,010 h)
+  unbounded: exponential, mean 1 %   failures    1024  MTBF      5,850 h  availability 0.998473  (better than simplex 1,010 h)
+================================================================================================================
+Lab task 3: watchdog false positives - healthy task, 1 % of periods run long (2-12 min) before the next heartbeat
+  timeout  5 min:   886 false restarts in 2000 h = 0.738 % of heartbeats, 10.63 per day; true hangs detected: 100 %
+  timeout 10 min:   247 false restarts in 2000 h = 0.206 % of heartbeats, 2.96 per day; true hangs detected: 100 %
+  timeout 20 min:     0 false restarts in 2000 h = 0.000 % of heartbeats, 0.00 per day; true hangs detected: 100 %
+================================================================================================================
+Lab task 4: availability versus MTTR, MTBF fixed at 1,010 h
+      MTTR  availability   downtime/year   saved vs previous
+    480 min      0.992141      4133.6 min
+    240 min      0.996055      2074.9 min          2058.6 min
+     60 min      0.999011       520.3 min          1554.7 min
+     20 min      0.999670       173.5 min           346.7 min
+     10 min      0.999835        86.8 min            86.8 min
+      5 min      0.999917        43.4 min            43.4 min
+      2 min      0.999967        17.4 min            26.0 min
+      1 min      0.999983         8.7 min             8.7 min
